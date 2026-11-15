@@ -14,13 +14,23 @@ const CARPETA_FOTOS = process.env.CARPETA_FOTOS || "/data/fotos";
 app.set("trust proxy", 1);        // Railway va detrás de proxy: sin esto el rate limit no distingue IPs
 app.use(express.json({ limit: "1mb" }));
 
-// El sitio vive en otro dominio (Vercel), así que necesita CORS.
+/* CORS. El sitio vive en otro dominio (Vercel) y necesita permiso,
+   pero el panel se sirve desde acá mismo: su propio origen siempre vale,
+   sin importar qué diga ORIGENES. */
 const permitidos = (process.env.ORIGENES || "").split(",").map(s => s.trim()).filter(Boolean);
-app.use(cors({
-  origin: (origen, cb) => {
-    if (!origen || !permitidos.length || permitidos.includes(origen)) return cb(null, true);
-    cb(new Error("Origen no permitido"));
-  }
+
+app.use(cors((req, cb) => {
+  const origen = req.headers.origin;
+  if (!origen) return cb(null, { origin: true });           // sin Origin: curl, o navegación normal
+
+  let mismoServidor = false;
+  try { mismoServidor = new URL(origen).host === req.headers.host; } catch {}
+
+  const permitido = mismoServidor || !permitidos.length || permitidos.includes(origen);
+  if (!permitido) console.warn("CORS: origen rechazado ->", origen);
+
+  // Sin cabecera CORS el navegador bloquea, pero el servidor no tira 500.
+  cb(null, { origin: permitido, credentials: false });
 }));
 
 // Las fotos se sirven desde el volumen persistente
