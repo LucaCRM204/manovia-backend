@@ -75,12 +75,45 @@ async function crearAdmin(){
   console.log("Ya podés sacar ADMIN_EMAIL y ADMIN_PASSWORD de las variables.");
 }
 
+/* Trae al volumen las fotos que ya están publicadas en el sitio.
+   Evita subir una por una desde el panel la primera vez.
+   Solo baja las que faltan, así se puede dejar puesto sin costo. */
+async function importarFotos(){
+  const origen = (process.env.IMPORTAR_FOTOS || "").replace(/\/$/, "");
+  if (!origen) return;
+
+  const carpeta = process.env.CARPETA_FOTOS || "/data/fotos";
+  await fs.mkdir(carpeta, { recursive: true });
+
+  const [filas] = await pool.query("SELECT DISTINCT archivo FROM fotos");
+  let bajadas = 0, yaEstaban = 0, fallaron = 0;
+
+  for (const { archivo } of filas){
+    const destino = path.join(carpeta, archivo);
+    try { await fs.access(destino); yaEstaban++; continue; } catch {}
+    try {
+      const r = await fetch(`${origen}/img/${archivo}`);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const datos = Buffer.from(await r.arrayBuffer());
+      if (datos.length < 1024) throw new Error("archivo muy chico");
+      await fs.writeFile(destino, datos);
+      bajadas++;
+    } catch (e) {
+      fallaron++;
+      console.warn(`  no se pudo traer ${archivo}: ${e.message}`);
+    }
+  }
+  console.log(`Fotos · bajadas: ${bajadas} · ya estaban: ${yaEstaban} · fallaron: ${fallaron}`);
+  if (!fallaron && bajadas) console.log("Ya podés sacar IMPORTAR_FOTOS de las variables.");
+}
+
 /* Nunca tumba el servidor: si algo de esto falla, el API igual levanta
    y el error queda en los logs. */
 async function preparar(){
   try {
     if (process.env.MIGRAR === "1") await migrar();
     await crearAdmin();
+    await importarFotos();
   } catch (e) {
     console.error("Arranque:", e.message);
   }

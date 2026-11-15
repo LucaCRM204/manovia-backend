@@ -87,18 +87,28 @@ railway run npm run migrar
 railway run node src/crear-usuario.js sofia@manovia.com.ar "clave" "Sofía"
 ```
 
-## 5. Subir las fotos que ya existen
+## 5. Traer las fotos que ya existen
 
-Las 32 fotos actuales están en el repo del sitio, en `img/`. Copialas al
-volumen una sola vez (Railway CLI, o arrastrándolas desde el panel producto
-por producto si son pocas):
+Las 32 fotos actuales ya están publicadas en el sitio. Agregá esta variable
+**temporalmente** y el servidor se las baja solo al arrancar:
 
-```bash
-railway run bash -c "mkdir -p /data/fotos"
-# y después subí el contenido de img/ ahí
+| Variable | Valor |
+|---|---|
+| `IMPORTAR_FOTOS` | `https://manovia.com.ar` |
+
+En los logs vas a ver:
+
+```
+Fotos · bajadas: 32 · ya estaban: 0 · fallaron: 0
 ```
 
-Mientras no estén, la web muestra el marcador bordó con el nombre: no se rompe.
+Después sacá la variable. Si la dejás no pasa nada (solo baja las que
+faltan), pero no tiene sentido que quede.
+
+Si el dominio propio todavía no resuelve, usá `https://manovia.vercel.app`.
+
+Mientras las fotos no estén, la web muestra el marcador bordó con el nombre
+del producto: no se rompe.
 
 ## 6. Conectar el sitio
 
