@@ -51,25 +51,41 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 Si esta clave cambia, se cierran todas las sesiones abiertas. No pasa nada grave,
 solo hay que volver a entrar.
 
-## 3. Crear las tablas y cargar el catálogo
+## 3. Crear las tablas, el catálogo y el usuario — sin CLI
 
-Desde la pestaña del servicio en Railway, o con el CLI:
+Agregá estas variables **temporalmente** y guardá. Al redeployar, el
+servidor crea las tablas, carga las 5 secciones con los 19 productos
+y da de alta al usuario del panel.
+
+| Variable | Valor |
+|---|---|
+| `MIGRAR` | `1` |
+| `ADMIN_EMAIL` | `sofia@manovia.com.ar` |
+| `ADMIN_PASSWORD` | la clave del panel (8 caracteres o más) |
+| `ADMIN_NOMBRE` | `Sofía` |
+
+En los logs tiene que aparecer:
+
+```
+Migración lista · productos nuevos: 19/19 · fotos: 32
+Usuario del panel listo: sofia@manovia.com.ar
+```
+
+**Después borrá `MIGRAR`, `ADMIN_EMAIL` y `ADMIN_PASSWORD`.** Dejarlas no
+rompe nada (todo es idempotente), pero la clave no tiene por qué quedar
+guardada ahí.
+
+Para cambiar la clave más adelante, o sumar a Martín: volvés a poner
+`ADMIN_EMAIL` y `ADMIN_PASSWORD`, redeploya, y las sacás.
+
+La clave se guarda hasheada con bcrypt: ni vos ni nadie puede leerla después.
+
+### Con Railway CLI, si lo preferís
 
 ```bash
 railway run npm run migrar
+railway run node src/crear-usuario.js sofia@manovia.com.ar "clave" "Sofía"
 ```
-
-Carga las 5 secciones y los 19 productos que ya están en la web.
-Se puede correr dos veces sin duplicar nada.
-
-## 4. Crear el usuario del panel
-
-```bash
-railway run node src/crear-usuario.js sofia@manovia.com.ar "una-clave-larga" "Sofía"
-```
-
-La clave se guarda hasheada con bcrypt: ni vos ni nadie puede leerla después.
-Si se la olvidan, se corre el mismo comando otra vez con una clave nueva.
 
 ## 5. Subir las fotos que ya existen
 

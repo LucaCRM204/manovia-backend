@@ -36,11 +36,48 @@ app.use("/api/admin", require("./rutas/admin"));
 app.use("/admin", express.static(path.join(__dirname, "..", "panel")));
 app.get("/", (_req, res) => res.redirect("/admin"));
 
-app.get("/salud", (_req, res) => res.json({ ok: true, hora: new Date().toISOString() }));
+/* Diagnóstico: dice si la base responde y si las tablas están cargadas.
+   Sirve para saber qué falta sin tener que leer los logs. */
+app.get("/salud", async (_req, res) => {
+  const pool = require("./db");
+  const estado = { ok: true, hora: new Date().toISOString() };
+  try {
+    await pool.query("SELECT 1");
+    estado.base = "conecta";
+  } catch (e) {
+    estado.ok = false;
+    estado.base = "NO CONECTA";
+    estado.motivo = e.code || e.message;
+    estado.pista = /ENOTFOUND|ECONNREFUSED|ETIMEDOUT/.test(e.code || "")
+      ? "Revisá MYSQL_URL: tiene que ser la referencia ${{MySQL.MYSQL_URL}}"
+      : "Revisá usuario y contraseña de la base";
+    return res.status(503).json(estado);
+  }
+  try {
+    const [[p]] = await pool.query("SELECT COUNT(*) AS n FROM productos");
+    const [[u]] = await pool.query("SELECT COUNT(*) AS n FROM usuarios");
+    estado.productos = p.n;
+    estado.usuarios = u.n;
+    if (!p.n) estado.pista = "No hay productos: poné MIGRAR=1 en las variables y redeployá";
+    if (!u.n) estado.pista = "No hay usuarios: poné ADMIN_EMAIL y ADMIN_PASSWORD y redeployá";
+  } catch (e) {
+    estado.ok = false;
+    estado.tablas = "FALTAN";
+    estado.motivo = e.code || e.message;
+    estado.pista = "Poné MIGRAR=1 en las variables de Railway y redeployá";
+    return res.status(503).json(estado);
+  }
+  res.json(estado);
+});
 
 app.use((err, _req, res, _next) => {
   console.error("error:", err.message);
   res.status(err.status || 500).json({ error: err.message || "Error del servidor" });
 });
 
-app.listen(PUERTO, () => console.log(`Manovia API escuchando en :${PUERTO}`));
+const { preparar } = require("./arranque");
+
+app.listen(PUERTO, async () => {
+  console.log(`Manovia API escuchando en :${PUERTO}`);
+  await preparar();           // migración y usuario, si las variables lo piden
+});
