@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Manovia · Administración</title>
+<style>
+:root{
+  --bordo-900:#3c0000; --bordo:#670010; --carmin:#960018;
+  --rosa:#e4717a; --rosa-claro:#f5abb0;
+  --papel:#fff; --hueso:#f7f0ee; --linea:#e4d7d4; --gris:#8d7c7a;
+  --verde:#1a7a43; --ui:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ui);color:var(--bordo-900);background:var(--hueso);font-size:15px;line-height:1.5;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select,textarea{font:inherit;color:inherit;width:100%;padding:11px 13px;border:1px solid var(--linea);background:var(--papel);border-radius:0}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--carmin);outline-offset:-1px}
+img{display:block;max-width:100%}
+:focus-visible{outline:2px solid var(--carmin);outline-offset:2px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 20px;
+  font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;
+  background:var(--bordo-900);color:#fff;border:1px solid var(--bordo-900);transition:background .15s}
+.btn:hover{background:var(--bordo)}
+.btn--linea{background:transparent;color:var(--bordo-900)}
+.btn--linea:hover{background:var(--bordo-900);color:#fff}
+.btn--rojo{background:var(--carmin);border-color:var(--carmin)}
+.btn--chico{min-height:36px;padding:0 13px;font-size:10.5px}
+.btn--ancho{width:100%}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.etiqueta{display:block;font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--gris);margin-bottom:6px;font-weight:500}
+
+/* ---------- login ---------- */
+#login{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.tarjeta-login{background:var(--papel);padding:36px 30px;width:100%;max-width:380px;border:1px solid var(--linea)}
+.tarjeta-login h1{font-size:24px;font-weight:500;letter-spacing:.04em}
+.tarjeta-login p{color:var(--gris);font-size:14px;margin-top:5px;margin-bottom:24px}
+.campo{margin-bottom:16px}
+
+/* ---------- estructura ---------- */
+#app{display:none;min-height:100dvh;flex-direction:column}
+header{background:var(--bordo-900);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:20}
+header strong{font-size:17px;font-weight:500;letter-spacing:.05em}
+header span{font-size:12.5px;color:var(--rosa-claro)}
+header button{color:var(--rosa-claro);font-size:12px;text-decoration:underline}
+main{flex:1;padding:18px;max-width:1240px;margin:0 auto;width:100%}
+
+.barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.barra select{width:auto;min-width:170px}
+.barra .buscar{flex:1 1 180px;min-width:150px}
+
+/* ---------- lista ---------- */
+.lista{display:grid;gap:10px}
+@media (min-width:720px){ .lista{grid-template-columns:repeat(2,1fr)} }
+@media (min-width:1100px){ .lista{grid-template-columns:repeat(3,1fr)} }
+.item{background:var(--papel);border:1px solid var(--linea);display:flex;gap:13px;padding:12px}
+.item__foto{width:76px;height:101px;flex-shrink:0;background:var(--hueso);object-fit:cover}
+.item__foto--vacia{display:grid;place-items:center;font-size:10px;color:var(--gris);text-align:center;line-height:1.3}
+.item__datos{flex:1;min-width:0}
+.item__datos h3{font-size:14.5px;font-weight:600}
+.item__meta{font-size:12px;color:var(--gris);margin-top:2px}
+.item__precio{font-size:14px;color:var(--bordo);margin-top:5px;font-variant-numeric:tabular-nums}
+.item__acciones{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}
+.pastilla{display:inline-block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;background:var(--rosa-claro);color:var(--bordo-900);margin-left:6px;vertical-align:1px}
+.pastilla--off{background:var(--linea);color:var(--gris)}
+
+/* ---------- panel lateral ---------- */
+.telon{position:fixed;inset:0;background:rgba(60,0,0,.5);opacity:0;visibility:hidden;transition:.25s;z-index:40}
+.telon.visible{opacity:1;visibility:visible}
+.cajon{position:fixed;z-index:50;background:var(--papel);display:flex;flex-direction:column;
+  left:0;right:0;bottom:0;max-height:94dvh;transform:translateY(101%);transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+.cajon.abierto{transform:translateY(0)}
+@media (min-width:760px){
+  .cajon{left:auto;top:0;bottom:0;width:480px;max-height:none;transform:translateX(101%)}
+  .cajon.abierto{transform:translateX(0)}
+}
+.cajon__top{display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border-bottom:1px solid var(--linea);flex-shrink:0}
+.cajon__top h2{font-size:17px;font-weight:600}
+.cajon__cuerpo{overflow-y:auto;flex:1;padding:18px;-webkit-overflow-scrolling:touch}
+.cajon__pie{padding:14px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--linea);display:flex;gap:9px;flex-shrink:0;background:var(--papel)}
+.cerrar{width:38px;height:38px;display:grid;place-items:center;font-size:24px;line-height:1;margin-right:-8px}
+
+.fila{display:grid;gap:12px;grid-template-columns:1fr 1fr;margin-bottom:14px}
+.campo--solo{grid-column:1 / -1}
+textarea{min-height:92px;resize:vertical}
+.ayuda{font-size:11.5px;color:var(--gris);margin-top:5px}
+
+/* colores */
+.colores{display:grid;gap:7px}
+.color-fila{display:flex;gap:7px;align-items:center}
+.color-fila input[type=color]{width:46px;height:42px;padding:3px;flex-shrink:0;cursor:pointer}
+.color-fila button{color:var(--carmin);font-size:19px;padding:0 7px;flex-shrink:0}
+
+/* talles */
+.talles{display:flex;gap:7px;flex-wrap:wrap}
+.talle{padding:8px 13px;border:1px solid var(--linea);background:var(--papel);font-size:13px;font-variant-numeric:tabular-nums}
+.talle[aria-pressed="true"]{background:var(--bordo);color:#fff;border-color:var(--bordo)}
+
+/* fotos */
+.zona{border:2px dashed var(--linea);padding:26px 16px;text-align:center;background:var(--hueso);transition:.15s;cursor:pointer}
+.zona:hover,.zona.encima{border-color:var(--bordo);background:#fff}
+.zona strong{display:block;font-size:14px;margin-bottom:3px}
+.zona span{font-size:12px;color:var(--gris)}
+.miniaturas{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-top:12px}
+.mini{position:relative;aspect-ratio:3/4;background:var(--hueso)}
+.mini img{width:100%;height:100%;object-fit:cover}
+.mini button{position:absolute;top:3px;right:3px;width:25px;height:25px;background:rgba(60,0,0,.85);color:#fff;font-size:15px;line-height:1;display:grid;place-items:center}
+.mini.subiendo{display:grid;place-items:center;font-size:11px;color:var(--gris)}
+
+/* avisos */
+.aviso{position:fixed;left:50%;bottom:22px;transform:translate(-50%,160%);z-index:90;
+  background:var(--bordo-900);color:#fff;padding:12px 20px;font-size:13.5px;
+  transition:transform .28s cubic-bezier(.2,.7,.2,1);max-width:calc(100vw - 32px);text-align:center}
+.aviso.visible{transform:translate(-50%,0)}
+.aviso.error{background:var(--carmin)}
+.aviso.ok{background:var(--verde)}
+.vacio{text-align:center;padding:56px 20px;color:var(--gris)}
+.vacio strong{display:block;font-size:17px;color:var(--bordo-900);margin-bottom:6px}
+@media (prefers-reduced-motion:reduce){ *{transition-duration:.01ms !important} }
+</style>
+</head>
+<body>
+
+<section id="login">
+  <form class="tarjeta-login" id="formLogin">
+    <h1>MANOVIA</h1>
+    <p>Panel de administración</p>
+    <div class="campo">
+      <label class="etiqueta" for="email">Email</label>
+      <input type="email" id="email" required autocomplete="username">
+    </div>
+    <div class="campo">
+      <label class="etiqueta" for="clave">Contraseña</label>
+      <input type="password" id="clave" required autocomplete="current-password">
+    </div>
+    <button class="btn btn--ancho" type="submit" id="btnEntrar">Entrar</button>
+  </form>
+</section>
+
+<div id="app">
+  <header>
+    <div><strong>MANOVIA</strong> <span id="quien"></span></div>
+    <button id="btnSalir">Salir</button>
+  </header>
+  <main>
+    <div class="barra">
+      <button class="btn" id="btnNuevo">+ Nuevo producto</button>
+      <select id="filtro"><option value="">Todas las secciones</option></select>
+      <input class="buscar" id="buscar" type="search" placeholder="Buscar por nombre…" aria-label="Buscar">
+    </div>
+    <div class="lista" id="lista"></div>
+  </main>
+</div>
+
+<div class="telon" id="telon"></div>
+<aside class="cajon" id="cajon" aria-hidden="true">
+  <div class="cajon__top">
+    <h2 id="tituloCajon">Producto</h2>
+    <button class="cerrar" id="btnCerrar" aria-label="Cerrar">&times;</button>
+  </div>
+  <div class="cajon__cuerpo" id="cuerpoCajon"></div>
+  <div class="cajon__pie">
+    <button class="btn btn--linea" id="btnCancelar">Cancelar</button>
+    <button class="btn" id="btnGuardar" style="flex:1">Guardar</button>
+  </div>
+</aside>
+
+<div class="aviso" id="aviso"></div>
+
+<script>
+/* ============================================================
+   El API vive en el mismo servidor que este panel.
+   ============================================================ */
+const API = location.origin;
+const $ = s => document.querySelector(s);
+
+let token = localStorage.getItem("manovia_token") || "";
+let secciones = [], productos = [], editando = null;
+
+/* ---------- utilidades ---------- */
+const plata = n => n > 0 ? "$" + Number(n).toLocaleString("es-AR") : "Sin precio";
+
+function avisar(texto, tipo = "ok"){
+  const a = $("#aviso");
+  a.textContent = texto;
+  a.className = "aviso visible " + tipo;
+  clearTimeout(a._t);
+  a._t = setTimeout(() => a.className = "aviso", 3200);
+}
+
+async function pedir(ruta, opciones = {}){
+  const r = await fetch(API + ruta, {
+    ...opciones,
+    headers: {
+      ...(opciones.body instanceof FormData ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: "Bearer " + token } : {}),
+      ...opciones.headers
+    }
+  });
+  if (r.status === 401){ salir(); throw new Error("Sesión vencida"); }
+  const datos = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(datos.error || "Error del servidor");
+  return datos;
+}
+
+/* ---------- sesión ---------- */
+$("#formLogin").addEventListener("submit", async e => {
+  e.preventDefault();
+  const b = $("#btnEntrar");
+  b.disabled = true; b.textContent = "Entrando…";
+  try {
+    const r = await pedir("/api/admin/login", {
+      method: "POST",
+      body: JSON.stringify({ email: $("#email").value, password: $("#clave").value })
+    });
+    token = r.token;
+    localStorage.setItem("manovia_token", token);
+    localStorage.setItem("manovia_nombre", r.nombre);
+    arrancar();
+  } catch (err){
+    avisar(err.message, "error");
+  } finally {
+    b.disabled = false; b.textContent = "Entrar";
+  }
+});
+
+function salir(){
+  token = "";
+  localStorage.removeItem("manovia_token");
+  $("#app").style.display = "none";
+  $("#login").style.display = "grid";
+}
+$("#btnSalir").addEventListener("click", salir);
+
+/* ---------- arranque ---------- */
+async function arrancar(){
+  $("#login").style.display = "none";
+  $("#app").style.display = "flex";
+  $("#quien").textContent = "· " + (localStorage.getItem("manovia_nombre") || "");
+  await cargar();
+}
+
+async function cargar(){
+  try {
+    [secciones, productos] = await Promise.all([
+      pedir("/api/admin/secciones"),
+      pedir("/api/admin/productos")
+    ]);
+    $("#filtro").innerHTML = '<option value="">Todas las secciones</option>' +
+      secciones.map(s => `<option value="${s.slug}">${s.nombre}</option>`).join("");
+    pintar();
+  } catch (err){ avisar(err.message, "error"); }
+}
+
+/* ---------- lista ---------- */
+function pintar(){
+  const f = $("#filtro").value;
+  const q = $("#buscar").value.trim().toLowerCase();
+  const lista = productos.filter(p =>
+    (!f || p.seccion === f) && (!q || p.nombre.toLowerCase().includes(q))
+  );
+  const cont = $("#lista");
+
+  if (!lista.length){
+    cont.innerHTML = '<div class="vacio" style="grid-column:1/-1"><strong>No hay productos acá</strong>' +
+      '<p>Probá con otra sección o creá uno nuevo.</p></div>';
+    return;
+  }
+
+  cont.innerHTML = "";
+  lista.forEach(p => {
+    const nombreSeccion = (secciones.find(s => s.slug === p.seccion) || {}).nombre || p.seccion;
+    const item = document.createElement("article");
+    item.className = "item";
+    item.innerHTML =
+      (p.fotos[0]
+        ? `<img class="item__foto" src="${API}/fotos/${p.fotos[0]}" alt="" loading="lazy">`
+        : `<div class="item__foto item__foto--vacia">Sin<br>foto</div>`) +
+      `<div class="item__datos">
+         <h3>${p.nombre}${p.activo ? "" : '<span class="pastilla pastilla--off">Oculto</span>'}${p.etiqueta ? `<span class="pastilla">${p.etiqueta}</span>` : ""}</h3>
+         <div class="item__meta">${nombreSeccion} · ${p.fotos.length} foto${p.fotos.length === 1 ? "" : "s"}</div>
+         <div class="item__precio">${plata(p.precio)}</div>
+         <div class="item__acciones">
+           <button class="btn btn--chico btn--linea" data-editar="${p.id}">Editar</button>
+           <button class="btn btn--chico btn--linea" data-borrar="${p.id}">Borrar</button>
+         </div>
+       </div>`;
+    item.querySelector("[data-editar]").addEventListener("click", () => abrir(p));
+    item.querySelector("[data-borrar]").addEventListener("click", () => borrar(p));
+    cont.appendChild(item);
+  });
+}
+$("#filtro").addEventListener("change", pintar);
+$("#buscar").addEventListener("input", pintar);
+
+async function borrar(p){
+  if (!confirm(`¿Borrar "${p.nombre}"?\n\nSe eliminan también sus ${p.fotos.length} foto(s). No se puede deshacer.`)) return;
+  try {
+    await pedir("/api/admin/productos/" + p.id, { method: "DELETE" });
+    avisar("Producto borrado");
+    await cargar();
+  } catch (err){ avisar(err.message, "error"); }
+}
+
+/* ---------- formulario ---------- */
+$("#btnNuevo").addEventListener("click", () => abrir(null));
+
+function abrir(p){
+  editando = p;
+  $("#tituloCajon").textContent = p ? p.nombre : "Nuevo producto";
+
+  const colores = p?.colores?.length ? p.colores : [{ n: "", h: "#670010" }];
+  const talles  = p?.talles || [];
+
+  $("#cuerpoCajon").innerHTML = `
+    <div class="fila">
+      <div class="campo--solo">
+        <label class="etiqueta" for="fNombre">Nombre</label>
+        <input id="fNombre" value="${p ? esc(p.nombre) : ""}" placeholder="Ronda">
+      </div>
+      <div>
+        <label class="etiqueta" for="fSeccion">Sección</label>
+        <select id="fSeccion">${secciones.map(s =>
+          `<option value="${s.slug}" ${p?.seccion === s.slug ? "selected" : ""}>${s.nombre}</option>`).join("")}</select>
+      </div>
+      <div>
+        <label class="etiqueta" for="fPrecio">Precio</label>
+        <input id="fPrecio" type="number" min="0" step="500" value="${p?.precio || ""}" placeholder="28000">
+      </div>
+      <div class="campo--solo">
+        <label class="etiqueta" for="fDetalle">Línea corta (va bajo el nombre en la grilla)</label>
+        <input id="fDetalle" value="${p ? esc(p.detalle || "") : ""}" placeholder="Hebilla redonda, tira de 2 cm">
+      </div>
+      <div class="campo--solo">
+        <label class="etiqueta" for="fDesc">Descripción</label>
+        <textarea id="fDesc" placeholder="Qué material es, cómo se usa, qué lo distingue.">${p ? esc(p.descripcion || "") : ""}</textarea>
+      </div>
+      <div>
+        <label class="etiqueta" for="fEtiqueta">Rótulo</label>
+        <input id="fEtiqueta" value="${p ? esc(p.etiqueta || "") : ""}" placeholder="Nuevo">
+      </div>
+      <div>
+        <label class="etiqueta" for="fActivo">Visible en la web</label>
+        <select id="fActivo">
+          <option value="1" ${p?.activo !== 0 ? "selected" : ""}>Sí</option>
+          <option value="0" ${p?.activo === 0 ? "selected" : ""}>No, ocultar</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label class="etiqueta">Colores</label>
+      <div class="colores" id="colores"></div>
+      <button class="btn btn--chico btn--linea" id="btnColor" type="button" style="margin-top:7px">+ Color</button>
+    </div>
+
+    <div style="margin-bottom:16px">
+      <label class="etiqueta">Talles en cm</label>
+      <div class="talles" id="talles"></div>
+      <p class="ayuda">Si no seleccionás ninguno, el producto se vende sin talle (como los portalipstick).</p>
+    </div>
+
+    <div>
+      <label class="etiqueta">Fotos</label>
+      <div class="zona" id="zona">
+        <strong>Arrastrá las fotos acá</strong>
+        <span>o tocá para elegirlas · se recortan solas a 3:4</span>
+        <input type="file" id="archivo" accept="image/*" multiple hidden>
+      </div>
+      <div class="miniaturas" id="miniaturas"></div>
+      ${p ? "" : '<p class="ayuda">Guardá primero el producto y después podés subir las fotos.</p>'}
+    </div>`;
+
+  pintarColores(colores);
+  pintarTalles(talles);
+  pintarFotos();
+  $("#btnColor").addEventListener("click", () =>
+    pintarColores(leerColores().concat([{ n: "", h: "#670010" }])));
+  armarZona();
+
+  $("#telon").classList.add("visible");
+  $("#cajon").classList.add("abierto");
+  $("#cajon").setAttribute("aria-hidden", "false");
+  $("#cuerpoCajon").scrollTop = 0;
+}
+
+const esc = s => String(s).replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+function pintarColores(lista){
+  const cont = $("#colores");
+  cont.innerHTML = "";
+  lista.forEach((c, i) => {
+    const fila = document.createElement("div");
+    fila.className = "color-fila";
+    fila.innerHTML = `<input type="color" value="${c.h || "#670010"}" aria-label="Color ${i+1}">
+                      <input type="text" value="${esc(c.n || "")}" placeholder="Nombre del color">
+                      <button type="button" aria-label="Quitar">&times;</button>`;
+    fila.querySelector("button").addEventListener("click", () => {
+      const quedan = leerColores().filter((_, j) => j !== i);
+      pintarColores(quedan.length ? quedan : [{ n: "", h: "#670010" }]);
+    });
+    cont.appendChild(fila);
+  });
+}
+function leerColores(){
+  return [...document.querySelectorAll(".color-fila")].map(f => ({
+    h: f.querySelector('input[type=color]').value,
+    n: f.querySelector('input[type=text]').value.trim()
+  }));
+}
+
+const TALLES_POSIBLES = [70,75,80,85,90,95,100,105,110,115];
+function pintarTalles(elegidos){
+  const cont = $("#talles");
+  cont.innerHTML = "";
+  TALLES_POSIBLES.forEach(t => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "talle"; b.textContent = t;
+    b.setAttribute("aria-pressed", elegidos.includes(t) ? "true" : "false");
+    b.addEventListener("click", () =>
+      b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"));
+    cont.appendChild(b);
+  });
+}
+const leerTalles = () => [...document.querySelectorAll('.talle[aria-pressed="true"]')].map(b => Number(b.textContent));
+
+/* ---------- fotos ---------- */
+function pintarFotos(){
+  const cont = $("#miniaturas");
+  if (!cont) return;
+  cont.innerHTML = "";
+  if (!editando) return;
+  const p = productos.find(x => x.id === editando.id);
+  (p?.fotosDetalle || []).forEach(f => {
+    const d = document.createElement("div");
+    d.className = "mini";
+    d.innerHTML = `<img src="${API}/fotos/${f.archivo}" alt="" loading="lazy">
+                   <button type="button" aria-label="Quitar foto">&times;</button>`;
+    d.querySelector("button").addEventListener("click", async () => {
+      if (!confirm("¿Quitar esta foto?")) return;
+      try {
+        await pedir("/api/admin/fotos/" + f.id, { method: "DELETE" });
+        await refrescarEditando();
+        avisar("Foto eliminada");
+      } catch (err){ avisar(err.message, "error"); }
+    });
+    cont.appendChild(d);
+  });
+}
+
+async function refrescarEditando(){
+  productos = await pedir("/api/admin/productos");
+  const p = productos.find(x => x.id === editando?.id);
+  if (p) editando = p;
+  pintarFotos();
+  pintar();
+}
+
+function armarZona(){
+  const zona = $("#zona"), input = $("#archivo");
+  if (!zona) return;
+  if (!editando){ zona.style.opacity = ".5"; zona.style.pointerEvents = "none"; return; }
+
+  zona.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => subir(input.files));
+  ["dragenter","dragover"].forEach(ev =>
+    zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.add("encima"); }));
+  ["dragleave","drop"].forEach(ev =>
+    zona.addEventListener(ev, e => { e.preventDefault(); zona.classList.remove("encima"); }));
+  zona.addEventListener("drop", e => subir(e.dataTransfer.files));
+}
+
+async function subir(archivos){
+  if (!archivos?.length || !editando) return;
+  const fd = new FormData();
+  [...archivos].slice(0, 8).forEach(a => fd.append("fotos", a));
+
+  const cont = $("#miniaturas");
+  const cargando = document.createElement("div");
+  cargando.className = "mini subiendo";
+  cargando.textContent = "Subiendo…";
+  cont.appendChild(cargando);
+
+  try {
+    await pedir(`/api/admin/productos/${editando.id}/fotos`, { method: "POST", body: fd });
+    await refrescarEditando();
+    avisar("Fotos subidas");
+  } catch (err){
+    avisar(err.message, "error");
+    cargando.remove();
+  }
+}
+
+/* ---------- guardar ---------- */
+$("#btnGuardar").addEventListener("click", async () => {
+  const cuerpo = {
+    nombre: $("#fNombre").value.trim(),
+    seccion: $("#fSeccion").value,
+    precio: Number($("#fPrecio").value) || 0,
+    detalle: $("#fDetalle").value.trim(),
+    descripcion: $("#fDesc").value.trim(),
+    etiqueta: $("#fEtiqueta").value.trim() || null,
+    colores: leerColores().filter(c => c.n),
+    talles: leerTalles(),
+    activo: $("#fActivo").value === "1"
+  };
+  if (!cuerpo.nombre) return avisar("Falta el nombre", "error");
+
+  const b = $("#btnGuardar");
+  b.disabled = true; b.textContent = "Guardando…";
+  try {
+    if (editando){
+      await pedir("/api/admin/productos/" + editando.id, { method: "PUT", body: JSON.stringify(cuerpo) });
+      avisar("Cambios guardados");
+      await cargar();
+      cerrar();
+    } else {
+      const r = await pedir("/api/admin/productos", { method: "POST", body: JSON.stringify(cuerpo) });
+      await cargar();
+      // Lo dejo abierto para que pueda subir las fotos sin volver a entrar
+      editando = productos.find(p => p.id === r.id);
+      avisar("Producto creado. Ahora podés subir las fotos.");
+      abrir(editando);
+    }
+  } catch (err){
+    avisar(err.message, "error");
+  } finally {
+    b.disabled = false; b.textContent = "Guardar";
+  }
+});
+
+function cerrar(){
+  $("#telon").classList.remove("visible");
+  $("#cajon").classList.remove("abierto");
+  $("#cajon").setAttribute("aria-hidden", "true");
+  editando = null;
+}
+$("#btnCerrar").addEventListener("click", cerrar);
+$("#btnCancelar").addEventListener("click", cerrar);
+$("#telon").addEventListener("click", cerrar);
+document.addEventListener("keydown", e => { if (e.key === "Escape") cerrar(); });
+
+/* ---------- inicio ---------- */
+if (token) pedir("/api/admin/yo").then(arrancar).catch(salir);
+</script>
+</body>
+</html>

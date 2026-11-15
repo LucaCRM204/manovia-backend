@@ -1,0 +1,25 @@
+{
+  "name": "manovia-api",
+  "version": "1.0.0",
+  "description": "API y panel de administración de Manovia",
+  "main": "src/servidor.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/servidor.js",
+    "dev": "node --watch src/servidor.js",
+    "migrar": "node src/migrar.js",
+    "usuario": "node src/crear-usuario.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "mysql2": "^3.11.5",
+    "sharp": "^0.33.5"
+  }
+}
