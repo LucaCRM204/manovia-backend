@@ -56,8 +56,30 @@ app.get("/salud", async (_req, res) => {
   try {
     const [[p]] = await pool.query("SELECT COUNT(*) AS n FROM productos");
     const [[u]] = await pool.query("SELECT COUNT(*) AS n FROM usuarios");
+    const [[f]] = await pool.query("SELECT COUNT(DISTINCT archivo) AS n FROM fotos");
     estado.productos = p.n;
     estado.usuarios = u.n;
+    estado.fotosEnBase = f.n;
+
+    // ¿están los archivos, y la carpeta es realmente persistente?
+    const fsp = require("fs/promises");
+    try {
+      await fsp.mkdir(CARPETA_FOTOS, { recursive: true });
+      const archivos = (await fsp.readdir(CARPETA_FOTOS)).filter(a => !a.startsWith("."));
+      estado.carpeta = CARPETA_FOTOS;
+      estado.fotosEnDisco = archivos.length;
+
+      // una carpeta fuera del volumen se borra en cada deploy
+      const montada = CARPETA_FOTOS.startsWith("/data");
+      estado.volumen = montada ? "ok" : "NO ES VOLUMEN";
+      if (!montada) estado.pista = "CARPETA_FOTOS debe empezar con /data y el volumen montarse ahí, si no las fotos se borran en cada deploy";
+      else if (!archivos.length && f.n) estado.pista = "Faltan los archivos: poné IMPORTAR_FOTOS=https://manovia.vercel.app y redeployá";
+    } catch (e) {
+      estado.carpeta = "NO SE PUEDE ESCRIBIR";
+      estado.motivo = e.message;
+      estado.pista = "Creá el volumen en Settings → Volumes con mount path /data";
+    }
+
     if (!p.n) estado.pista = "No hay productos: poné MIGRAR=1 en las variables y redeployá";
     if (!u.n) estado.pista = "No hay usuarios: poné ADMIN_EMAIL y ADMIN_PASSWORD y redeployá";
   } catch (e) {
